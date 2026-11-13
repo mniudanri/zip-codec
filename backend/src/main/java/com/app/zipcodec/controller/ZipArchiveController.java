@@ -2,7 +2,9 @@ package com.app.zipcodec.controller;
 
 import com.app.zipcodec.dto.DecodedArchive;
 import com.app.zipcodec.dto.request.DecodeRequest;
+import com.app.zipcodec.dto.request.RebuildRequest;
 import com.app.zipcodec.dto.response.EncodeResponse;
+import com.app.zipcodec.dto.response.ExplodeResponse;
 import com.app.zipcodec.service.ZipArchiveService;
 import com.app.zipcodec.shared.enums.EncodingVariant;
 import com.app.zipcodec.shared.exceptions.InvalidArchiveException;
@@ -47,8 +49,32 @@ public class ZipArchiveController {
     @Operation(summary = "Decode a Base64 string back into the original ZIP archive")
     @PostMapping(path = "/decode", consumes = MediaType.APPLICATION_JSON_VALUE)
     public ResponseEntity<StreamingResponseBody> decode(@Valid @RequestBody DecodeRequest request) {
-        return zipResponse(
+        return zipResponse("decoded.zip",
                 service.decode(request.base64(), request.variant(), request.expectedSha256()));
+    }
+
+    @Operation(summary = "Expand a ZIP archive into a recursive tree with per-entry Base64")
+    @PostMapping(path = "/explode", consumes = MediaType.MULTIPART_FORM_DATA_VALUE,
+            produces = MediaType.APPLICATION_JSON_VALUE)
+    public ExplodeResponse explode(@RequestPart("file") MultipartFile file,
+                                   @RequestParam(value = "variant", required = false)
+                                             EncodingVariant variant,
+                                   @RequestParam(value = "recurse", defaultValue = "false")
+                                             boolean recurse) {
+        return expand(file, variant, true, recurse);
+    }
+
+    @Operation(summary = "Rebuild a ZIP archive from a tree of Base64-encoded entries")
+    @PostMapping(path = "/rebuild", consumes = MediaType.APPLICATION_JSON_VALUE)
+    public ResponseEntity<StreamingResponseBody> rebuild(@Valid @RequestBody RebuildRequest request) {
+        return zipResponse("rebuilt.zip", service.rebuild(request.root(), request.variant()));
+    }
+
+    @Operation(summary = "List the archive tree without reading or encoding any entry data")
+    @PostMapping(path = "/inspect", consumes = MediaType.MULTIPART_FORM_DATA_VALUE,
+            produces = MediaType.APPLICATION_JSON_VALUE)
+    public ExplodeResponse inspect(@RequestPart("file") MultipartFile file) {
+        return expand(file, null, false, false);
     }
 
     private InputStream open(MultipartFile file) throws IOException {
@@ -62,7 +88,7 @@ public class ZipArchiveController {
      * The archive has already been produced and validated, so streaming it here can
      * only fail on transport errors. the temporary file is released afterward.
      */
-    private ResponseEntity<StreamingResponseBody> zipResponse(DecodedArchive archive) {
+    private ResponseEntity<StreamingResponseBody> zipResponse(String filename, DecodedArchive archive) {
         ContentDisposition disposition = ContentDisposition.attachment().filename("decoded.zip").build();
         StreamingResponseBody body = target -> {
             try (DecodedArchive resource = archive; InputStream source = resource.open()) {
@@ -76,5 +102,13 @@ public class ZipArchiveController {
                 .contentType(new MediaType("application", "zip"))
                 .contentLength(archive.sizeBytes())
                 .body(body);
+    }
+
+    private ExplodeResponse expand(MultipartFile file, EncodingVariant variant, boolean includeContent, boolean recurse) {
+        try (InputStream source = open(file)) {
+            return service.explode(source, file.getOriginalFilename(), variant, includeContent, recurse);
+        } catch (IOException e) {
+            throw new UncheckedIOException("Failed to read the uploaded archive", e);
+        }
     }
 }

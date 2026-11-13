@@ -68,7 +68,6 @@ class ArchiveControllerIntegrationTest {
         assertThat(decoded).isEqualTo(archive);
     }
 
-
     @Test
     public void returnsProblemDetailWhenAnEntryEscapesTheArchiveRoot() throws Exception {
         byte[] malicious = ZipFixtures.archive().withFile("../../etc/passwd", "root:x:0:0").toBytes();
@@ -87,6 +86,7 @@ class ArchiveControllerIntegrationTest {
             .andExpect(status().isUnsupportedMediaType())
             .andExpect(jsonPath("$.title").value("Unreadable archive"));
     }
+
     @Test
     public void rejectsMalformedBase64() throws Exception {
         mvc().perform(post("/api/v1/archives/decode")
@@ -104,6 +104,57 @@ class ArchiveControllerIntegrationTest {
             .andExpect(status().isBadRequest());
     }
 
+    @Test
+    void explodesAnArchiveIntoARecursiveTreeWithPerEntryPayloads() throws Exception {
+        byte[] archive = ZipFixtures.archive()
+                .withFile("docs/reports/q1.txt", "first quarter")
+                .withFile("docs/readme.md", "# readme")
+                .toBytes();
+
+        mvc().perform(multipart("/api/v1/archives/explode").file(upload(archive)))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.manifest.maxDepth").value(3))
+                .andExpect(jsonPath("$.root.children[0].type").value("DIRECTORY"))
+                .andExpect(jsonPath("$.root.children[0].name").value("docs"))
+                .andExpect(jsonPath("$.root.children[0].children[?(@.type == 'FILE')].content").isNotEmpty());
+    }
+
+    @Test
+    void inspectsAnArchiveWithoutReturningContent() throws Exception {
+        byte[] archive = ZipFixtures.archive().withFile("docs/readme.md", "# readme").toBytes();
+        mvc().perform(multipart("/api/v1/archives/inspect").file(upload(archive)))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.manifest.entryCount").value(1))
+                .andExpect(jsonPath("$.root.children[0].children[0].content").doesNotExist());
+    }
+
+    @Test
+    void rebuildsAnArchiveFromAnExplodedTree() throws Exception {
+        byte[] archive = ZipFixtures.archive().withFile("data/payload.bin", "round trip").toBytes();
+        String exploded = mvc().perform(multipart("/api/v1/archives/explode").file(upload(archive)))
+                .andExpect(status().isOk())
+                .andReturn().getResponse().getContentAsString();
+
+        JsonNode root = objectMapper.readTree(exploded).get("root");
+
+        byte[] rebuilt = streamZip(post("/api/v1/archives/rebuild")
+                .contentType(MediaType.APPLICATION_JSON)
+                .content(objectMapper.writeValueAsString(Map.of("root", root))));
+
+        // Rebuilt bytes differ (timestamps, compression), so compare the content.
+        String reExploded = mvc().perform(multipart("/api/v1/archives/explode")
+                        .file(new MockMultipartFile("file", "rebuilt.zip", "application/zip", rebuilt)))
+                .andExpect(status().isOk())
+                .andReturn().getResponse().getContentAsString();
+
+        JsonNode file = objectMapper.readTree(reExploded)
+                .get("root").get("children").get(0).get("children").get(0);
+
+        assertThat(file.get("path").asText()).isEqualTo("data/payload.bin");
+        assertThat(new String(Base64.getDecoder().decode(file.get("content").asText()), StandardCharsets.UTF_8))
+                .isEqualTo("round trip");
+    }
+
     private byte[] streamZip(RequestBuilder request) throws Exception {
         MvcResult started = mvc().perform(request)
             .andExpect(status().isOk())
@@ -113,9 +164,11 @@ class ArchiveControllerIntegrationTest {
             .andExpect(status().isOk())
             .andReturn().getResponse().getContentAsByteArray();
     }
+
     private static MockMultipartFile upload(byte[] archive) {
         return new MockMultipartFile("file", "bundle.zip", "application/zip", archive);
     }
+
     private static String sha256Of(byte[] data) throws Exception {
         return HexFormat.of().formatHex(MessageDigest.getInstance("SHA-256").digest(data));
     }
