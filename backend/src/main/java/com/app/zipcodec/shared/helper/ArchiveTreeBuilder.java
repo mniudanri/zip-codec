@@ -25,7 +25,7 @@ public final class ArchiveTreeBuilder {
     }
 
     /**
-     * Inserts {@code file}, creating any missing parent directories
+     * Inserts {@param file}, creating any missing parent directories
      */
     public void addFile(String path, ArchiveNode.File file) {
         String[] segments = segmentsOf(path);

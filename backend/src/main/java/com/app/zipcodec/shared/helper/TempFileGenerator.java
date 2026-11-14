@@ -114,7 +114,7 @@ public class TempFileGenerator {
     }
 
     /**
-     * Counts written bytes and fails fast once {@code maxBytes} is exceeded
+     * Counts written bytes and fails fast once {@param maxBytes} is exceeded
      */
     private final class LimitedOutputStream extends FilterOutputStream {
         private final long maxBytes;

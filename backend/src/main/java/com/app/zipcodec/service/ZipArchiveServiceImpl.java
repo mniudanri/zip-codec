@@ -3,6 +3,7 @@ package com.app.zipcodec.service;
 import com.app.zipcodec.config.ArchiveProperties;
 import com.app.zipcodec.dto.ArchiveManifest;
 import com.app.zipcodec.dto.DecodedArchive;
+import com.app.zipcodec.dto.EncodedArchive;
 import com.app.zipcodec.dto.response.EncodeResponse;
 import com.app.zipcodec.dto.response.ExplodeResponse;
 import com.app.zipcodec.model.ArchiveLimits;
@@ -131,7 +132,7 @@ public class ZipArchiveServiceImpl implements ZipArchiveService {
 
     /**
      * Mode B — expand the archive into a recursive tree. With
-     * {@code includeContent = false} this is the cheap inspect variant that never
+     * {@param includeContent = false} this is the cheap inspect variant that never
      * reads entry data.
      */
     @Override
@@ -180,6 +181,47 @@ public class ZipArchiveServiceImpl implements ZipArchiveService {
         log.info("rebuild finished: bytes={} in {} ms", rebuilt.sizeBytes(), millisSince(startedAt));
 
         return rebuilt;
+    }
+
+    /**
+     * Streaming encode, the archive is validated up front,
+     * then its Base64 is written straight to the caller in fixed-size chunks.
+     *
+     * {@link #encode} has to materialize the whole Base64 string — roughly 1.37x
+     * the archive, so that it can be embedded in a JSON document. A 100 MB archive
+     * therefore becomes a ~133 MB single-line JSON response, which streams fine to
+     * {@param curl} but overwhelms GUI clients that buffer and pretty-print the body.
+     * This variant keeps memory constant and emits text/plain, so the output
+     * can simply be redirected to a file.
+     */
+    @Override
+    public EncodedArchive encodeStreaming(InputStream source, String filename, EncodingVariant requested) {
+        EncodingVariant variant = helper.variantOf(requested);
+        ArchiveLimits limits = properties.toLimits();
+        long startedAt = System.nanoTime();
+
+        log.info("encode-stream started: filename={}", filename);
+
+        TempFileGenerator.Payload payload = spool.spool(source, limits.maxUploadBytes());
+        try {
+            // validate before a single byte is written: once the body has started
+            ZipArchiveReader.Content inspection = reader.read(payload.path(), new ZipArchiveReader.Options(
+                    limits, false, false, properties.encoding().entryNameCharset(), variant));
+
+            ArchiveManifest manifest = new ArchiveManifest(
+                    filename, payload.sizeBytes(), payload.sha256(), inspection.entryCount(),
+                    inspection.maxDepth(), variant, variant.encodedLength(payload.sizeBytes()),
+                    inspection.entryNameCharset());
+
+            log.info("encode-stream validated: filename={} bytes={} entries={} base64Chars={} in {} ms",
+                    filename, payload.sizeBytes(), inspection.entryCount(), manifest.base64Length(),
+                    millisSince(startedAt));
+
+            return new EncodedArchive(payload, manifest, base64Codec);
+        } catch (RuntimeException e) {
+            payload.close();
+            throw e;
+        }
     }
 
     private long millisSince(long startedAtNanos) {

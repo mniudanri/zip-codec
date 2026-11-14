@@ -37,7 +37,7 @@ public final class ArchiveBudget {
      * Charges {@param bytes} expanded bytes of a single entry against both the
      * per-entry and the global budget.
      *
-     * @param entryBytesSoFar running total for the current entry, including {@code bytes}
+     * @param entryBytesSoFar running total for the current entry, including {@param bytes}
      */
     public void charge(String entryName, long bytes, long entryBytesSoFar) {
         if (entryBytesSoFar > limits.maxEntryBytes()) {

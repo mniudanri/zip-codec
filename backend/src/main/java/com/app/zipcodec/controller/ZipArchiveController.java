@@ -1,6 +1,8 @@
 package com.app.zipcodec.controller;
 
+import com.app.zipcodec.dto.ArchiveManifest;
 import com.app.zipcodec.dto.DecodedArchive;
+import com.app.zipcodec.dto.EncodedArchive;
 import com.app.zipcodec.dto.request.DecodeRequest;
 import com.app.zipcodec.dto.request.RebuildRequest;
 import com.app.zipcodec.dto.response.EncodeResponse;
@@ -10,6 +12,7 @@ import com.app.zipcodec.shared.enums.EncodingVariant;
 import com.app.zipcodec.shared.exceptions.InvalidArchiveException;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
+import jakarta.servlet.http.HttpServletRequest;
 import jakarta.validation.Valid;
 import org.springframework.http.ContentDisposition;
 import org.springframework.http.HttpHeaders;
@@ -77,6 +80,57 @@ public class ZipArchiveController {
         return expand(file, null, false, false);
     }
 
+    @Operation(summary = "Stream the Base64 of a ZIP archive as text/plain, in constant memory",
+            description = "Same bytes as /encode, without wrapping them in JSON. Preferred for large archives "
+                    + "and for GUI clients, which struggle to render a multi-megabyte single-line JSON body.")
+    @PostMapping(path = "/encode/stream", consumes = MediaType.MULTIPART_FORM_DATA_VALUE,
+            produces = MediaType.TEXT_PLAIN_VALUE)
+    public ResponseEntity<StreamingResponseBody> encodeStream(@RequestPart("file") MultipartFile file,
+                                                              @RequestParam(value = "variant", required = false)
+                                                              EncodingVariant variant) {
+        EncodedArchive encoded;
+        try (InputStream source = open(file)) {
+            encoded = service.encodeStreaming(source, file.getOriginalFilename(), variant);
+        } catch (IOException e) {
+            throw new UncheckedIOException("Failed to read the uploaded archive", e);
+        }
+
+        ArchiveManifest manifest = encoded.manifest();
+        StreamingResponseBody body = target -> {
+            try (EncodedArchive resource = encoded) {
+                resource.writeBase64(target);
+            }
+        };
+        // The manifest travels in headers because the body is raw Base64; the exact
+        // length is known up front, so clients still get a determinate progress bar.
+        return ResponseEntity.ok()
+                .header(HttpHeaders.CONTENT_DISPOSITION, ContentDisposition.attachment()
+                        .filename(base64Filename(manifest.filename())).build().toString())
+                .header("X-Archive-Sha256", manifest.sha256())
+                .header("X-Archive-Size-Bytes", Long.toString(manifest.sizeBytes()))
+                .header("X-Archive-Entry-Count", Integer.toString(manifest.entryCount()))
+                .header("X-Archive-Max-Depth", Integer.toString(manifest.maxDepth()))
+                .header("X-Archive-Variant", manifest.variant().name())
+                .contentType(MediaType.TEXT_PLAIN)
+                .contentLength(manifest.base64Length())
+                .body(body);
+    }
+
+    @Operation(summary = "Decode a raw Base64 body (text/plain) back into the original ZIP archive",
+            description = "Inverse of /encode/stream. Takes the Base64 as the request body rather than a JSON "
+                    + "field, so no JSON escaping or shell quoting is involved.")
+    @PostMapping(path = "/decode/stream", consumes = MediaType.TEXT_PLAIN_VALUE)
+    public ResponseEntity<StreamingResponseBody> decodeStream(
+            HttpServletRequest request,
+            @RequestParam(value = "variant", required = false) EncodingVariant variant,
+            @RequestParam(value = "expectedSha256", required = false) String expectedSha256) {
+        try (InputStream body = request.getInputStream()) {
+            return zipResponse("decoded.zip", service.decode(body, variant, expectedSha256));
+        } catch (IOException e) {
+            throw new UncheckedIOException("Failed to read the Base64 request body", e);
+        }
+    }
+
     private InputStream open(MultipartFile file) throws IOException {
         if (file == null || file.isEmpty()) {
             throw new InvalidArchiveException("No archive was uploaded");
@@ -110,5 +164,10 @@ public class ZipArchiveController {
         } catch (IOException e) {
             throw new UncheckedIOException("Failed to read the uploaded archive", e);
         }
+    }
+
+    private static String base64Filename(String originalFilename) {
+        String base = originalFilename == null || originalFilename.isBlank() ? "archive" : originalFilename;
+        return base + ".b64.txt";
     }
 }

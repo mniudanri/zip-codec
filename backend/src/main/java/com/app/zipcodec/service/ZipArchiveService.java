@@ -1,6 +1,7 @@
 package com.app.zipcodec.service;
 
 import com.app.zipcodec.dto.DecodedArchive;
+import com.app.zipcodec.dto.EncodedArchive;
 import com.app.zipcodec.dto.response.EncodeResponse;
 import com.app.zipcodec.dto.response.ExplodeResponse;
 import com.app.zipcodec.model.ArchiveNode;
@@ -18,4 +19,8 @@ public interface ZipArchiveService {
                                    boolean includeContent, boolean recurseNestedArchives);
 
     DecodedArchive rebuild(ArchiveNode.Directory root, EncodingVariant requested);
+
+    EncodedArchive encodeStreaming(InputStream source, String filename, EncodingVariant requested);
+
+    DecodedArchive decode(InputStream base64Text, EncodingVariant requested, String expectedSha256);
 }
