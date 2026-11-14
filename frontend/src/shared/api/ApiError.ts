@@ -27,8 +27,7 @@ export class ApiError extends Error {
   }
 
   static http(status: number, problem?: ProblemDetail): ApiError {
-    const message =
-      problem?.detail ?? problem?.title ?? `The service responded with HTTP ${status}.`;
+    const message = problem?.detail ?? problem?.title ?? `The service responded with HTTP ${status}.`;
     return new ApiError('http', message, { status, ...(problem ? { problem } : {}) });
   }
 
@@ -152,7 +151,7 @@ export function remediationFor(error: unknown): string | undefined {
   }
 
   if (error.kind === 'network') {
-    return 'Start the service with "mvn spring-boot:run" and confirm http://localhost:8080/actuator/health reports UP.';
+    return 'Wait till the server is up and come back later.';
   }
   if (error.kind === 'timeout') {
     return 'Large archives can take a while. Raise VITE_REQUEST_TIMEOUT_MS, or use the streaming endpoints which begin transferring immediately.';

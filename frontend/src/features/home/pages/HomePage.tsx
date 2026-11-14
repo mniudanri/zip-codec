@@ -1,4 +1,4 @@
-import { Alert, Badge, Button, Card, Group, List, SimpleGrid, Stack, Text, ThemeIcon } from '@mantine/core';
+import { Alert, Button, Card, Group, List, SimpleGrid, Stack, Text, ThemeIcon } from '@mantine/core';
 import { IconArrowRight, IconInfoCircle } from '@tabler/icons-react';
 import { useNavigate } from 'react-router-dom';
 import { operationModes } from '@shared/config/modes';
@@ -12,7 +12,7 @@ export function HomePage() {
     <Stack gap="xl">
       <PageHeader
         title="ZIP Codec Console"
-        description="A front end for the ZIP Codec Service: convert archives to Base64 and back, expand them into an editable JSON tree, and reassemble them again. Every operation here maps to exactly one backend endpoint."
+        description="A website for ZIP Codec Service: convert archives to Base64 and back, expand them into an editable JSON tree, and reassemble them again."
       />
 
       <SimpleGrid cols={{ base: 1, sm: 2, lg: 3 }} spacing="lg">
@@ -30,12 +30,6 @@ export function HomePage() {
                     <Text fw={600}>{mode.label}</Text>
 
                   </Group>
-
-                  {mode.endpoint ? (
-                    <Badge variant="light" color="gray" style={{ fontFamily: 'monospace' }}>
-                      {mode.endpoint}
-                    </Badge>
-                  ) : null}
 
                   <Text size="sm" c="dimmed">
                     {mode.description}

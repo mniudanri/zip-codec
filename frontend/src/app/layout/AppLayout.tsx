@@ -16,6 +16,7 @@ import { IconFileZip, IconMoon, IconSun } from '@tabler/icons-react';
 import { Outlet, useLocation, useNavigate } from 'react-router-dom';
 import { navRoutes } from '@app/router/routes';
 import { BackendStatus } from './BackendStatus';
+import { AppFooter } from './AppFooter';
 
 function ColorSchemeToggle() {
   const { setColorScheme } = useMantineColorScheme();
@@ -91,6 +92,7 @@ export function AppLayout() {
 
       <AppShell.Main>
         <Outlet />
+        <AppFooter />
       </AppShell.Main>
     </AppShell>
   );

@@ -12,6 +12,28 @@ body {
 .archive-tree-row:hover {
   background-color: var(--mantine-color-default-hover);
 }
+
+@keyframes blink-eye {
+  0%,
+  92%,
+  100% {
+    opacity: 1;
+  }
+  96% {
+    opacity: 0.1;
+  }
+}
+
+.blink-eye {
+  animation: blink-eye 3.2s ease-in-out infinite;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .blink-eye {
+    animation: none;
+  }
+}
+
 code,
 pre {
   font-family:
