@@ -45,6 +45,7 @@ export function AppLayout() {
   return (
     <AppShell
       header={{ height: 60 }}
+      footer={{ height: { base: 52, sm: 56 }}}
       navbar={{ width: 280, breakpoint: 'sm', collapsed: { mobile: !mobileOpened } }}
       padding="lg"
     >
@@ -92,8 +93,11 @@ export function AppLayout() {
 
       <AppShell.Main>
         <Outlet />
-        <AppFooter />
       </AppShell.Main>
+
+      <AppShell.Footer>
+        <AppFooter />
+      </AppShell.Footer>
     </AppShell>
   );
 }

@@ -1,10 +1,10 @@
-import { ActionIcon, Anchor, Divider, Group, Stack, Text, Tooltip } from '@mantine/core';
+import { ActionIcon, Anchor, Group, Text, Tooltip } from '@mantine/core';
 import {
   IconBrandGithub,
   IconBrandLinkedin,
   IconBrandWhatsapp,
-  IconMail,
   IconCoffee,
+  IconMail,
 } from '@tabler/icons-react';
 import type { ComponentType } from 'react';
 import { author, contactLinks, type ContactLink } from '@shared/config/author';
@@ -21,46 +21,42 @@ const ICONS: Record<ContactLink['id'], ComponentType<{ size?: number; stroke?: n
  */
 export function AppFooter() {
   return (
-    <Stack gap="sm" mt="xl">
-      <Divider />
-      <Group justify="space-between" align="center" wrap="wrap" gap="sm">
-        <Group gap={6} wrap="nowrap">
-          <IconCoffee size={16} stroke={1.5} />
-          <Text size="sm" c="dimmed">
-            Built by{' '}
-            
-            <Anchor href={author.repositoryUrl} target="_blank" rel="noopener noreferrer" size="sm">
-              {author.name}
-            </Anchor>
-
+    <Group h="100%" px="md" justify="space-between" align="center" wrap="nowrap" gap="sm">
+      <Group gap={6} wrap="nowrap" style={{ minWidth: 0 }}>
+        <IconCoffee size={16} stroke={1.5} />
+        <Text size="sm" c="dimmed" truncate>
+          Built by{' '}
+          <Anchor href={author.repositoryUrl} target="_blank" rel="noopener noreferrer" size="sm">
+            {author.name}
+          </Anchor>
+          <Text span inherit visibleFrom="sm">
             {' \u00b7 '}
-
             {author.tagline}
           </Text>
-        </Group>
-
-        <Group gap="xs">
-          {contactLinks.map((link) => {
-            const Icon = ICONS[link.id];
-            return (
-              <Tooltip key={link.id} label={link.description} withArrow>
-                <ActionIcon
-                  component="a"
-                  href={link.href}
-                  target={link.href.startsWith('mailto:') ? undefined : '_blank'}
-                  rel="noopener noreferrer"
-                  variant="subtle"
-                  color="gray"
-                  size="lg"
-                  aria-label={`${link.label}: ${link.description}`}
-                >
-                  <Icon size={18} stroke={1.5} />
-                </ActionIcon>
-              </Tooltip>
-            );
-          })}
-        </Group>
+        </Text>
       </Group>
-    </Stack>
+
+      <Group gap={4} wrap="nowrap">
+        {contactLinks.map((link) => {
+          const Icon = ICONS[link.id];
+          return (
+            <Tooltip key={link.id} label={link.description} withArrow>
+              <ActionIcon
+                component="a"
+                href={link.href}
+                target={link.href.startsWith('mailto:') ? undefined : '_blank'}
+                rel="noopener noreferrer"
+                variant="subtle"
+                color="gray"
+                size="lg"
+                aria-label={`${link.label}: ${link.description}`}
+              >
+                <Icon size={18} stroke={1.5} />
+              </ActionIcon>
+            </Tooltip>
+          );
+        })}
+      </Group>
+    </Group>
   );
 }
