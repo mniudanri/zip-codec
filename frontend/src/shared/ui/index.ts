@@ -8,3 +8,4 @@ export { RunControls, type RunControlsProps } from './RunControls';
 export { SectionCard, type SectionCardProps } from './SectionCard';
 export { TreeSummary, type TreeSummaryProps } from './TreeSummary';
 export { VariantSelect, type VariantSelectProps } from './VariantSelect';
+export { FilePreviewModal, type FilePreviewModalProps } from './FilePreviewModal';

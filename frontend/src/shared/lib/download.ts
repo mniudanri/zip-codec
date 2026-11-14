@@ -22,6 +22,7 @@ export function downloadJson(value: unknown, filename: string): void {
 }
 
 const TRAILING_EXTENSION = /\.[^./\\]+$/;
+
 export function stripExtension(filename: string): string {
   return filename.replace(TRAILING_EXTENSION, '');
 }
@@ -36,6 +37,7 @@ export function archiveNameFor(sourceName: string | undefined, fallback = 'resto
   if (!sourceName || sourceName.length === 0) {
     return fallback;
   }
+
   const withoutWrapper = /\.(b64|txt|base64)$/i.test(sourceName)
     ? stripExtension(sourceName)
     : sourceName;
@@ -48,13 +50,38 @@ export function leafName(path: string): string {
   return segments.length > 0 ? (segments[segments.length - 1] ?? path) : path;
 }
 
-// decodes a base64 entry payload into a blob without building an intermediate string
-export function base64ToBlob(base64: string, mimeType?: string | null): Blob {
-  const binary = atob(base64.replace(/\s+/g, ''));
-  const bytes = new Uint8Array(binary.length);
-  for (let i = 0; i < binary.length; i += 1) {
-    bytes[i] = binary.charCodeAt(i);
+export function normalizeBase64(value: string): string {
+  const compact = value.replace(/\s+/g, '').replace(/-/g, '+').replace(/_/g, '/');
+  const remainder = compact.length % 4;
+  return remainder === 0 ? compact : compact.padEnd(compact.length + (4 - remainder), '=');
+}
+
+/**
+ * decodes Base64 to bytes, optionally stopping after "maxBytes"
+ */
+export function base64ToBytes(base64: string, maxBytes?: number): Uint8Array<ArrayBuffer> {
+  let normalized = normalizeBase64(base64);
+  if (maxBytes !== undefined && maxBytes >= 0) {
+    // Four Base64 characters carry three bytes; keep the slice 4-aligned.
+    const charLimit = Math.ceil(maxBytes / 3) * 4;
+    
+    if (charLimit < normalized.length) {
+      normalized = normalized.slice(0, charLimit);
+    }
   }
 
-  return new Blob([bytes], { type: mimeType ?? 'application/octet-stream' });
+  const binary = atob(normalized);
+  const limit = maxBytes !== undefined && maxBytes >= 0 ? Math.min(binary.length, maxBytes) : binary.length;
+
+  const bytes = new Uint8Array(new ArrayBuffer(limit));
+
+  for (let i = 0; i < limit; i += 1) {
+    bytes[i] = binary.charCodeAt(i);
+  }
+  return bytes;
+}
+
+// decodes a Base64 entry payload into a Blob without building an intermediate string
+export function base64ToBlob(base64: string, mimeType?: string | null): Blob {
+  return new Blob([base64ToBytes(base64)], { type: mimeType ?? 'application/octet-stream' });
 }

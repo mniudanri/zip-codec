@@ -59,6 +59,7 @@ const EXPECTED = [
   'src/shared/lib/bytes.ts',
   'src/shared/lib/clipboard.ts',
   'src/shared/lib/download.ts',
+  'src/shared/lib/filePreview.ts',
   'src/shared/lib/preview.ts',
   'src/shared/lib/sha256.ts',
   'src/shared/state/handoff.ts',

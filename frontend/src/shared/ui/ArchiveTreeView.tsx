@@ -4,16 +4,19 @@ import {
   IconChevronDown,
   IconChevronRight,
   IconDownload,
+  IconEye,
   IconFile,
   IconFileZip,
   IconFolder,
 } from '@tabler/icons-react';
 import { isDirectory, type ArchiveNode, type FileNode } from '@shared/domain/archive';
 import { formatBytes } from '@shared/lib/bytes';
+import { sanitizeDisplayName } from '@shared/lib/filePreview';
 
 export interface ArchiveTreeViewProps {
   root: ArchiveNode;
   onDownloadFile?: (node: FileNode) => void;
+  onPreviewFile?: (node: FileNode) => void;
   // directories at or below this depth start expanded
   defaultExpandedDepth?: number;
   maxHeight?: number;
@@ -24,12 +27,16 @@ interface NodeRowProps {
   depth: number;
   defaultExpandedDepth: number;
   onDownloadFile?: (node: FileNode) => void;
+  onPreviewFile?: (node: FileNode) => void;
 }
 
-function NodeRow({ node, depth, defaultExpandedDepth, onDownloadFile }: NodeRowProps) {
+function NodeRow({node, depth, defaultExpandedDepth, onDownloadFile, onPreviewFile,}: NodeRowProps) {
   const [expanded, setExpanded] = useState(depth < defaultExpandedDepth);
   const directory = isDirectory(node);
   const indent = depth * 18;
+  // entry names come from the archive, so they can carry bidi overrides that
+  // make an executable read as a .png. Never render one raw.
+  const displayName = sanitizeDisplayName(node.name === '' ? '/' : node.name);
 
   return (
     <Box>
@@ -45,7 +52,7 @@ function NodeRow({ node, depth, defaultExpandedDepth, onDownloadFile }: NodeRowP
           <UnstyledButton
             onClick={() => setExpanded((open) => !open)}
             aria-expanded={expanded}
-            aria-label={`${expanded ? 'Collapse' : 'Expand'} ${node.name}`}
+            aria-label={`${expanded ? 'Collapse' : 'Expand'} ${displayName}`}
             style={{ display: 'flex', alignItems: 'center' }}
           >
             {expanded ? <IconChevronDown size={16} /> : <IconChevronRight size={16} />}
@@ -64,8 +71,8 @@ function NodeRow({ node, depth, defaultExpandedDepth, onDownloadFile }: NodeRowP
           <IconFile size={16} stroke={1.5} />
         )}
 
-        <Text size="sm" truncate style={{ flex: 1, minWidth: 0 }} title={node.path}>
-          {node.name === '' ? '/' : node.name}
+        <Text size="sm" truncate style={{ flex: 1, minWidth: 0 }} title={sanitizeDisplayName(node.path)}>
+          {displayName}
         </Text>
 
         {directory ? (
@@ -75,6 +82,7 @@ function NodeRow({ node, depth, defaultExpandedDepth, onDownloadFile }: NodeRowP
                 nested archive
               </Badge>
             ) : null}
+
             <Text size="xs" c="dimmed">
               {node.children.length} item{node.children.length === 1 ? '' : 's'}
             </Text>
@@ -92,7 +100,21 @@ function NodeRow({ node, depth, defaultExpandedDepth, onDownloadFile }: NodeRowP
             <Text size="xs" c="dimmed">
               {formatBytes(node.sizeBytes)}
             </Text>
-
+            
+            {onPreviewFile && node.content ? (
+              <Tooltip label="Preview this entry">
+                <ActionIcon
+                  size="sm"
+                  variant="subtle"
+                  color="gray"
+                  onClick={() => onPreviewFile(node)}
+                  aria-label={`Preview ${displayName}`}
+                >
+                  <IconEye size={14} />
+                </ActionIcon>
+              </Tooltip>
+            ) : null}
+            x
             {onDownloadFile && node.content ? (
               <Tooltip label="Download this entry">
                 <ActionIcon
@@ -100,7 +122,7 @@ function NodeRow({ node, depth, defaultExpandedDepth, onDownloadFile }: NodeRowP
                   variant="subtle"
                   color="gray"
                   onClick={() => onDownloadFile(node)}
-                  aria-label={`Download ${node.name}`}
+                  aria-label={`Download ${displayName}`}
                 >
                   <IconDownload size={14} />
                 </ActionIcon>
@@ -118,6 +140,7 @@ function NodeRow({ node, depth, defaultExpandedDepth, onDownloadFile }: NodeRowP
               depth={depth + 1}
               defaultExpandedDepth={defaultExpandedDepth}
               {...(onDownloadFile ? { onDownloadFile } : {})}
+              {...(onPreviewFile ? { onPreviewFile } : {})}
             />
           ))
         : null}
@@ -134,9 +157,11 @@ function NodeRow({ node, depth, defaultExpandedDepth, onDownloadFile }: NodeRowP
 export function ArchiveTreeView({
   root,
   onDownloadFile,
+  onPreviewFile,
   defaultExpandedDepth = 2,
   maxHeight = 460,
 }: ArchiveTreeViewProps) {
+
   return (
     <ScrollArea.Autosize mah={maxHeight} type="auto">
       <Box role="tree" aria-label="Archive contents" pr="sm">
@@ -145,6 +170,7 @@ export function ArchiveTreeView({
           depth={0}
           defaultExpandedDepth={defaultExpandedDepth}
           {...(onDownloadFile ? { onDownloadFile } : {})}
+          {...(onPreviewFile ? { onPreviewFile } : {})}
         />
       </Box>
     </ScrollArea.Autosize>

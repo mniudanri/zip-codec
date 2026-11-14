@@ -13,6 +13,7 @@ import {
   ArchiveDropzone,
   ArchiveTreeView,
   ErrorPanel,
+  FilePreviewModal,
   ManifestPanel,
   PageHeader,
   RunControls,
@@ -26,8 +27,10 @@ export function ExplodePage() {
   const [file, setFile] = useState<File | null>(null);
   const [recurse, setRecurse] = useState(false);
   const [variant, setVariant] = useState<EncodingVariant>('STANDARD');
+  const [previewNode, setPreviewNode] = useState<FileNode | null>(null);
   const navigate = useNavigate();
   const explode = useExplode();
+
   const heavy = file !== null && file.size > MAX_INLINE_ARCHIVE_BYTES / 4;
 
   const run = (): void => {
@@ -38,6 +41,7 @@ export function ExplodePage() {
   };
 
   const result = explode.data;
+
   const downloadEntry = (node: FileNode): void => {
     if (!node.content) {
       return;
@@ -135,7 +139,7 @@ export function ExplodePage() {
 
           <SectionCard
             title="Contents"
-            subtitle="Entries with content can be downloaded individually."
+            subtitle="Entries with content can be previewed or downloaded individually."
             actions={
               <Group gap="xs">
                 <Button
@@ -158,9 +162,19 @@ export function ExplodePage() {
           >
             <Stack gap="md">
               <TreeSummary root={result.root} />
-              <ArchiveTreeView root={result.root} onDownloadFile={downloadEntry} />
+              <ArchiveTreeView
+                root={result.root}
+                onDownloadFile={downloadEntry}
+                onPreviewFile={setPreviewNode}
+              />
             </Stack>
           </SectionCard>
+
+          <FilePreviewModal
+            node={previewNode}
+            onClose={() => setPreviewNode(null)}
+            onDownload={downloadEntry}
+          />
         </>
       ) : null}
     </Stack>
