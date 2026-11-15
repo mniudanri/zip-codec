@@ -59,7 +59,7 @@ public class ZipArchiveServiceImpl implements ZipArchiveService {
     }
 
     /**
-     * Mode A — spool the upload, validate it against the policy without extracting
+     * Mode A, spool the upload, validate it against the policy without extracting
      * anything, then encode the raw bytes.
      */
     @Override
@@ -131,7 +131,7 @@ public class ZipArchiveServiceImpl implements ZipArchiveService {
     }
 
     /**
-     * Mode B — expand the archive into a recursive tree. With
+     * Mode B, expand the archive into a recursive tree. With
      * {@param includeContent = false} this is the cheap inspect variant that never
      * reads entry data.
      */
@@ -187,7 +187,7 @@ public class ZipArchiveServiceImpl implements ZipArchiveService {
      * Streaming encode, the archive is validated up front,
      * then its Base64 is written straight to the caller in fixed-size chunks.
      *
-     * {@link #encode} has to materialize the whole Base64 string — roughly 1.37x
+     * {@link #encode} has to materialize the whole Base64 string, roughly 1.37x
      * the archive, so that it can be embedded in a JSON document. A 100 MB archive
      * therefore becomes a ~133 MB single-line JSON response, which streams fine to
      * {@param curl} but overwhelms GUI clients that buffer and pretty-print the body.
@@ -264,7 +264,7 @@ public class ZipArchiveServiceImpl implements ZipArchiveService {
         }
         if (lastIndexOf(tail, END_OF_CENTRAL_DIRECTORY) < 0) {
             throw new InvalidPayloadException(("Decoded payload is a truncated ZIP archive: %d bytes decoded but the "
-                    + "end-of-central-directory record is missing. The Base64 was cut short in transit — "
+                    + "end-of-central-directory record is missing. The Base64 was cut short in transit, "
                     + "command shells cap a pasted argument (cmd.exe at 8191 characters), so send it from a "
                     + "file with --data-binary @file.b64 instead of pasting it.").formatted(size));
         }
