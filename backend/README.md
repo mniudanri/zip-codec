@@ -1,5 +1,4 @@
 # ZIP Codec Service - single-module edition
-
 Spring Boot service that converts a ZIP archive (with recursive folders, files and
 nested archives) into Base64 text, and back again.
 

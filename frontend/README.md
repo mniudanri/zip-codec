@@ -1,75 +1,44 @@
-# React + TypeScript + Vite
+# zip-codec-ui
+Frontend console for the ZIP Codec Service. React 19 + Vite + TypeScript + Mantine.
+> Dependencies were **never installed** in this workspace, the files are hand-authored.
+> Run step 2 before anything else.
 
-This template provides a minimal setup to get React working in Vite with HMR and some ESLint rules.
+## Steps
+```bash
+# set variables
+export VITE_PROXY_TARGET=<BACKEND_HOST> # default http://localhost:8080
+export VITE_HEALTH_URL=<CHECK_URL> # default /actuator/health
+export VITE_REQUEST_TIMEOUT_MS=<BACKEND_API_TIMEOUT>
+export VITE_MAX_PREVIEW_CHARS=<MAX_CHARACTER_BASE64_PREVIEW>
+export VITE_MAX_UPLOAD_BYTES=<MAX_UPLOAD_BYTE_SIZE>
 
-Currently, two official plugins are available:
+# set variable also could use .env.example
+# example command: cp .env.example .env
 
-- [@vitejs/plugin-react](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react) uses [Oxc](https://oxc.rs)
-- [@vitejs/plugin-react-swc](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react-swc) uses [SWC](https://swc.rs/)
+# install the node dependencies
+npm install
 
-## React Compiler
-
-The React Compiler is not enabled on this template because of its impact on dev & build performances. To add it, see [this documentation](https://react.dev/learn/react-compiler/installation).
-
-## Expanding the ESLint configuration
-
-If you are developing a production application, we recommend updating the configuration to enable type-aware lint rules:
-
-```js
-export default defineConfig([
-  globalIgnores(['dist']),
-  {
-    files: ['**/*.{ts,tsx}'],
-    extends: [
-      // Other configs...
-
-      // Remove tseslint.configs.recommended and replace with this
-      tseslint.configs.recommendedTypeChecked,
-      // Alternatively, use this for stricter rules
-      tseslint.configs.strictTypeChecked,
-      // Optionally, add this for stylistic rules
-      tseslint.configs.stylisticTypeChecked,
-
-      // Other configs...
-    ],
-    languageOptions: {
-      parserOptions: {
-        project: ['./tsconfig.node.json', './tsconfig.app.json'],
-        tsconfigRootDir: import.meta.dirname,
-      },
-      // other options...
-    },
-  },
-])
-
+# start the server
+npm run dev
 ```
 
-You can also install [eslint-plugin-react-x](https://npmx.dev/package/eslint-plugin-react-x) and [eslint-plugin-react-dom](https://npmx.dev/package/eslint-plugin-react-dom) for React-specific lint rules:
+Open <http://localhost:5173>.
+The header shows a **backend** badge, green means the proxy reached
+`http://localhost:8080/actuator/health`.
 
-```js
-// eslint.config.js
-import reactX from 'eslint-plugin-react-x'
-import reactDom from 'eslint-plugin-react-dom'
+---
 
-export default defineConfig([
-  globalIgnores(['dist']),
-  {
-    files: ['**/*.{ts,tsx}'],
-    extends: [
-      // Other configs...
-      // Enable lint rules for React
-      reactX.configs['recommended-typescript'],
-      // Enable lint rules for React DOM
-      reactDom.configs.recommended,
-    ],
-    languageOptions: {
-      parserOptions: {
-        project: ['./tsconfig.node.json', './tsconfig.app.json'],
-        tsconfigRootDir: import.meta.dirname,
-      },
-      // other options...
-    },
-  },
-])
+## Other commands
+| Command | What it does |
+|---|---|
+| `npm run dev` | Dev server on :5173, proxies `/api` and `/actuator` to :8080 |
+| `npm run build` | Typecheck, then production build into `dist/` |
+| `npm run preview` | Serve the production build |
+| `npm run lint` | ESLint, including the layering rules |
+| `npm run verify` | format check -> lint -> typecheck -> test -> build |
+---
 
-```
+## Prerequisites
+* node v22+
+* npm
+* backend server [zip-codec-server](https://github.com/mniudanri/zip-codec/blob/main/backend/README.md)
