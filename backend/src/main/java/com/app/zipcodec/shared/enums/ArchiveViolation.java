@@ -1,0 +1,14 @@
+package com.app.zipcodec.shared.enums;
+
+public enum ArchiveViolation {
+    PATH_TRAVERSAL,
+    ABSOLUTE_PATH,
+    PATH_TOO_LONG,
+    ENTRY_COUNT_EXCEEDED,
+    TOTAL_SIZE_EXCEEDED,
+    ENTRY_SIZE_EXCEEDED,
+    COMPRESSION_RATIO_EXCEEDED,
+    NESTING_TOO_DEEP,
+    ENCRYPTED_ENTRY,
+    UNSUPPORTED_ENTRY_TYPE
+}

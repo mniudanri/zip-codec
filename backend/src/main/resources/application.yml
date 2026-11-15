@@ -1,0 +1,60 @@
+spring:
+  application:
+    name: zip-codec-app
+  servlet:
+    multipart:
+      max-file-size: 256MB
+      max-request-size: 258MB
+      file-size-threshold: 4MB
+  threads:
+    virtual:
+      enabled: true
+  mvc:
+    problemdetails:
+      enabled: true
+    async:
+      # Applies to the streamed responses (/encode/stream, /decode, /rebuild).
+      # Without a ceiling a stalled client or a wedged write would keep the request
+      # open forever. It does NOT apply to /encode, /explode or /inspect, which are
+      # plain synchronous handlers.
+      request-timeout: 120s
+server:
+  port: 8080
+  error:
+    include-message: never
+archive:
+  temp-dir: ${java.io.tmpdir}/zip-codec
+  limits:
+    # Largest accepted upload, compressed.
+    max-upload-bytes: 268435456                # 256 MB
+    # Global expansion budget; the primary zip-bomb guard.
+    max-total-uncompressed-bytes: 1073741824   # 1 GB
+    max-entry-bytes: 134217728                 # 128 MB
+    max-entry-count: 10000
+    max-nesting-depth: 3
+    # Entries compressing better than this are treated as bombs.
+    max-compression-ratio: 100
+    max-path-length: 1024
+  encoding:
+    variant: STANDARD                          # STANDARD | MIME | URL_SAFE
+    chunk-size-bytes: 49152                    # multiple of 3 and 4
+    # Ceiling for Base64 returned inside JSON. Kept deliberately modest: the JSON
+    # body is ~1.37x the archive and must be buffered whole by the client, and GUI
+    # clients (Postman, Insomnia, browsers) stall or drop the connection on bodies
+    # of tens of megabytes. Larger archives are served by /encode/stream instead.
+    max-inline-base64-chars: 33554432          # 32 M chars, about a 24 MB archive
+    entry-name-charset: CP437                  # fallback for names without the UTF-8 flag
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,info,metrics
+  endpoint:
+    health:
+      show-details: when-authorized
+springdoc:
+  swagger-ui:
+    path: /swagger-ui.html
+logging:
+  level:
+    com.example.zipcodec: INFO
