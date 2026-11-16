@@ -74,7 +74,8 @@ flowchart LR
     CLI["curl · Postman · any HTTP client"] --> API
 ```
 
-In development the Vite dev server proxies `/api` and `/actuator` to `localhost:8080`.
+In development the Vite dev server proxies `/api` and `/actuator` to `localhost:8080`.<br>
+Live demo application could be seen at [ZIP Codec Portal](https://zcodec.mohniudanri.my.id)
 
 ---
 

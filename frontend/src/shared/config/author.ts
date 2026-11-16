@@ -33,7 +33,7 @@ export const contactLinks: readonly ContactLink[] = [
     id: 'github',
     label: 'GitHub',
     description: 'Source code and projects',
-    href: 'https://github.com/mniudanri',
+    href: 'https://github.com/mniudanri/zip-codec/tree/main/frontend',
   },
   {
     id: 'linkedin',
